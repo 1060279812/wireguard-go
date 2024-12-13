@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/1060279812/wireguard-go/conn"
+	"github.com/1060279812/wireguard-go/peer"
 	"github.com/1060279812/wireguard-go/tun"
 	"golang.org/x/crypto/chacha20poly1305"
 	"golang.org/x/net/ipv4"
@@ -479,22 +480,22 @@ func (device *Device) RoutineEncryption(id int) {
 	}
 }
 
-func (peer *Peer) RoutineSequentialSender(maxBatchSize int) {
-	device := peer.device
+func (peer2 *Peer) RoutineSequentialSender(maxBatchSize int) {
+	device := peer2.device
 	defer func() {
-		defer device.log.Verbosef("%v - Routine: sequential sender - stopped", peer)
-		peer.stopping.Done()
+		defer device.log.Verbosef("%v - Routine: sequential sender - stopped", peer2)
+		peer2.stopping.Done()
 	}()
-	device.log.Verbosef("%v - Routine: sequential sender - started", peer)
+	device.log.Verbosef("%v - Routine: sequential sender - started", peer2)
 
 	bufs := make([][]byte, 0, maxBatchSize)
 
-	for elemsContainer := range peer.queue.outbound.c {
+	for elemsContainer := range peer2.queue.outbound.c {
 		bufs = bufs[:0]
 		if elemsContainer == nil {
 			return
 		}
-		if !peer.isRunning.Load() {
+		if !peer2.isRunning.Load() {
 			// peer has been stopped; return re-usable elems to the shared pool.
 			// This is an optimization only. It is possible for the peer to be stopped
 			// immediately after this check, in which case, elem will get processed.
@@ -517,12 +518,12 @@ func (peer *Peer) RoutineSequentialSender(maxBatchSize int) {
 			bufs = append(bufs, elem.packet)
 		}
 
-		peer.timersAnyAuthenticatedPacketTraversal()
-		peer.timersAnyAuthenticatedPacketSent()
+		peer2.timersAnyAuthenticatedPacketTraversal()
+		peer2.timersAnyAuthenticatedPacketSent()
 
-		err := peer.SendBuffers(bufs)
+		err := peer2.SendBuffers(bufs)
 		if dataSent {
-			peer.timersDataSent()
+			peer2.timersDataSent()
 		}
 		for _, elem := range elemsContainer.elems {
 			device.PutMessageBuffer(elem.buffer)
@@ -537,10 +538,16 @@ func (peer *Peer) RoutineSequentialSender(maxBatchSize int) {
 			}
 		}
 		if err != nil {
-			device.log.Errorf("%v - Failed to send data packets: %v", peer, err)
+			// 获取单例的 PeerStateManager
+			manager := peerState.GetInstance()
+
+			// 回调网络问题导致握手失败
+			manager.NotifyStateChange(peerState.HandshakeFailedForNetwork)
+
+			device.log.Errorf("%v - Failed to send data packets: %v", peer2, err)
 			continue
 		}
 
-		peer.keepKeyFreshSending()
+		peer2.keepKeyFreshSending()
 	}
 }

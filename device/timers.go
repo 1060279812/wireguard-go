@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 	_ "unsafe"
+		"github.com/1060279812/wireguard-go/peer"
 )
 
 //go:linkname fastrandn runtime.fastrandn
@@ -117,6 +118,11 @@ func expiredSendKeepalive(peer *Peer) {
 }
 
 func expiredNewHandshake(peer *Peer) {
+	// 获取单例的 PeerStateManager
+	manager := peerState.GetInstance()
+	// 回调通知握手失败
+	manager.NotifyStateChange(peerState.HandshakeFailedForOther)
+
 	peer.device.log.Verbosef("%s - Retrying handshake because we stopped hearing back after %d seconds", peer, int((KeepaliveTimeout + RekeyTimeout).Seconds()))
 	/* We clear the endpoint address src address, in case this is the cause of trouble. */
 	peer.markEndpointSrcForClearing()

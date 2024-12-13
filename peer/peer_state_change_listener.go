@@ -1,23 +1,19 @@
-package peer
+package peerState
 
 // 定义状态常量
-type State int
+type State string
 
 const (
-    Starting State = iota
-    Connecting
-    HandshakeFailedForOther
-    HandshakeFailedForNetwork
-    Disconnecting
-    Stopping
+	Starting                  State = "starting"
+	Connecting                State = "connecting"
+	HandshakeFailedForOther   State = "handshakeFailedForOther"
+	HandshakeFailedForNetwork State = "handshakeFailedForNetwork"
+	Disconnecting             State = "disconnecting"
+	Stopping                  State = "stopping"
 )
 
-// PeerStateChangeListener 接口定义了各个状态变化的回调方法
+// PeerStateChangeListener 定义回调接口
 type PeerStateChangeListener interface {
-    OnStarting()
-    OnConnecting()
-    OnHandshakeFailedForOther()
-    OnHandshakeFailedForNetwork()
-    OnDisconnecting()
-    OnStopping()
+	OnStateChange(state State) // 状态变化时回调
+	Destroy()                  // 销毁回调
 }

@@ -11,7 +11,7 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
-
+	"github.com/1060279812/wireguard-go/peer"
 	"github.com/1060279812/wireguard-go/conn"
 )
 
@@ -186,6 +186,11 @@ func (peer *Peer) Start() {
 
 	device := peer.device
 	device.log.Verbosef("%v - Starting", peer)
+
+	// 获取单例的 PeerStateManager
+	manager := peerState.GetInstance()
+	// peer Starting peer
+	manager.NotifyStateChange(peerState.Starting)
 
 	// reset routine state
 	peer.stopping.Wait()
