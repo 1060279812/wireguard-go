@@ -14,12 +14,11 @@ import (
 	"sync"
 	"time"
 
+	"github.com/1060279812/wireguard-go/conn"
+	"github.com/1060279812/wireguard-go/tun"
 	"golang.org/x/crypto/chacha20poly1305"
 	"golang.org/x/net/ipv4"
 	"golang.org/x/net/ipv6"
-	"github.com/1060279812/wireguard-go/conn"
-	"github.com/1060279812/wireguard-go/tun"
-	"github.com/1060279812/wireguard-go/peer"
 )
 
 /* Outbound flow
