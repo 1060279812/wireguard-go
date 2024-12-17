@@ -138,6 +138,7 @@ func (device *Device) IpcGetOperation(w io.Writer) error {
 // IpcSetOperation implements the WireGuard configuration protocol "set" operation.
 // See https://www.wireguard.com/xplatform/#configuration-protocol for details.
 func (device *Device) IpcSetOperation(r io.Reader) (err error) {
+	device.log.Verbosef("---------------IpcSetOperation()-----------------")
 	device.ipcMutex.Lock()
 	defer device.ipcMutex.Unlock()
 
@@ -167,6 +168,7 @@ func (device *Device) IpcSetOperation(r io.Reader) (err error) {
 			if deviceConfig {
 				deviceConfig = false
 			}
+			device.log.Verbosef("---------------IpcSetOperation() handlePublicKeyLine-----------------")
 			peer.handlePostConfig()
 			// Load/create the peer we are now configuring.
 			err := device.handlePublicKeyLine(peer, value)
@@ -175,7 +177,7 @@ func (device *Device) IpcSetOperation(r io.Reader) (err error) {
 			}
 			continue
 		}
-
+		device.log.Verbosef("---------------IpcSetOperation() key-----------------")
 		var err error
 		if deviceConfig {
 			err = device.handleDeviceLine(key, value)
