@@ -21,7 +21,7 @@ import (
 	"strings"
 	"time"
 
-	"golang.zx2c4.com/wireguard/tun"
+	"github.com/1060279812/wireguard-go/tun"
 
 	"golang.org/x/net/dns/dnsmessage"
 	"gvisor.dev/gvisor/pkg/bufferv2"
