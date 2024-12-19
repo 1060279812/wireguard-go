@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/1060279812/wireguard-go/conn"
+	"github.com/1060279812/wireguard-go/peer"
 )
 
 type Peer struct {
@@ -53,6 +54,9 @@ type Peer struct {
 	cookieGenerator             CookieGenerator
 	trieEntries                 list.List
 	persistentKeepaliveInterval atomic.Uint32
+
+	//新增字段
+	publicKey NoisePublicKey
 }
 
 func (device *Device) NewPeer(pk NoisePublicKey) (*Peer, error) {
@@ -104,6 +108,12 @@ func (device *Device) NewPeer(pk NoisePublicKey) (*Peer, error) {
 
 	// add
 	device.peers.keyMap[pk] = peer
+    
+	//当前当前peer的publicKey
+	peer.publicKey = pk
+
+	// Notify all listeners peer created
+	peerState.GetInstance().NotifyStateChange(peer.publicKey, peerState.Created)
 
 	return peer, nil
 }
@@ -172,6 +182,9 @@ func (peer *Peer) Start() {
 
 	device := peer.device
 	device.log.Verbosef("%v - Starting", peer)
+
+	// Notify all listeners peer starting
+	peerState.GetInstance().NotifyStateChange(peer.publicKey, peerState.Starting)
 
 	// reset routine state
 	peer.stopping.Wait()
@@ -245,6 +258,9 @@ func (peer *Peer) Stop() {
 	if !peer.isRunning.Swap(false) {
 		return
 	}
+
+	// Notify all listeners peer created
+	peerState.GetInstance().NotifyStateChange(peer.publicKey, peerState.Stopping)
 
 	peer.device.log.Verbosef("%v - Stopping", peer)
 

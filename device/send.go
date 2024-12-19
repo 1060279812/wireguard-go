@@ -17,6 +17,7 @@ import (
 	"golang.org/x/crypto/chacha20poly1305"
 	"golang.org/x/net/ipv4"
 	"golang.org/x/net/ipv6"
+	"github.com/1060279812/wireguard-go/peer"
 )
 
 /* Outbound flow
@@ -442,6 +443,10 @@ func (peer *Peer) RoutineSequentialSender() {
 		device.PutMessageBuffer(elem.buffer)
 		device.PutOutboundElement(elem)
 		if err != nil {
+			
+			// Notify all listeners that the Failed to send data packet
+		    peerState.GetInstance().NotifyStateChange(peer.publicKey, peerState.HandshakeFailedForNetwork)
+
 			device.log.Errorf("%v - Failed to send data packet: %v", peer, err)
 			continue
 		}

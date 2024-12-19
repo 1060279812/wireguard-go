@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/1060279812/wireguard-go/conn"
+	"github.com/1060279812/wireguard-go/peer"
 	"golang.org/x/crypto/chacha20poly1305"
 	"golang.org/x/net/ipv4"
 	"golang.org/x/net/ipv6"
@@ -366,6 +367,9 @@ func (device *Device) RoutineHandshake(id int) {
 
 			// update endpoint
 			peer.SetEndpointFromPacket(elem.endpoint)
+
+			// Notify all listeners Received handshake response
+			peerState.GetInstance().NotifyStateChange(peer.publicKey, peerState.HandshakeSuccess)
 
 			device.log.Verbosef("%v - Received handshake response", peer)
 			peer.rxBytes.Add(uint64(len(elem.packet)))

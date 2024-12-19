@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 	_ "unsafe"
+	"github.com/1060279812/wireguard-go/peer"
 )
 
 //go:linkname fastrandn runtime.fastrandn
@@ -79,7 +80,10 @@ func (peer *Peer) timersActive() bool {
 func expiredRetransmitHandshake(peer *Peer) {
 	if peer.timers.handshakeAttempts.Load() > MaxTimerHandshakes {
 		peer.device.log.Verbosef("%s - Handshake did not complete after %d attempts, giving up", peer, MaxTimerHandshakes+2)
-
+		
+		// Notify all listeners that the handshake failed
+		peerState.GetInstance().NotifyStateChange(peer.publicKey, peerState.HandshakeFailedForOther)
+		
 		if peer.timersActive() {
 			peer.timers.sendKeepalive.Del()
 		}
@@ -98,7 +102,10 @@ func expiredRetransmitHandshake(peer *Peer) {
 	} else {
 		peer.timers.handshakeAttempts.Add(1)
 		peer.device.log.Verbosef("%s - Handshake did not complete after %d seconds, retrying (try %d)", peer, int(RekeyTimeout.Seconds()), peer.timers.handshakeAttempts.Load()+1)
-
+		
+		// Notify all listeners that the handshake failed
+		peerState.GetInstance().NotifyStateChange(peer.publicKey, peerState.HandshakeFailedForOther)
+		
 		/* We clear the endpoint address src address, in case this is the cause of trouble. */
 		peer.Lock()
 		if peer.endpoint != nil {
@@ -121,6 +128,10 @@ func expiredSendKeepalive(peer *Peer) {
 }
 
 func expiredNewHandshake(peer *Peer) {
+
+	// Notify all listeners that the handshake failed
+	peerState.GetInstance().NotifyStateChange(peer.publicKey, peerState.HandshakeFailedForOther)
+
 	peer.device.log.Verbosef("%s - Retrying handshake because we stopped hearing back after %d seconds", peer, int((KeepaliveTimeout + RekeyTimeout).Seconds()))
 	/* We clear the endpoint address src address, in case this is the cause of trouble. */
 	peer.Lock()

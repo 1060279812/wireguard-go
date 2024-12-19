@@ -15,7 +15,7 @@ import (
 type testPairCommonBits struct {
 	s1    []byte
 	s2    []byte
-	match uint8
+	match uint
 }
 
 func TestCommonBits(t *testing.T) {
