@@ -1,0 +1,9 @@
+{
+    "files.associations": {
+        "stdio.h": "c",
+        "my_jni.h": "c",
+        "jni.h": "c",
+        "go_call_jni.h": "c"
+    },
+    "C_Cpp.errorSquiggles": "enabled"
+}

@@ -1,10 +1,39 @@
 package peerState
 
-import "C"
+/*
+#cgo LDFLAGS: -L. -lBridgingGo
+#include "go_call_jni.h"
+#include <jni.h>
 
+// 声明将要在 Go 代码中使用的 C 函数
+void CallJavaOnPeerStateChange(JNIEnv *env, jobject obj, jstring state);
+
+void CallJavaOnPeerStateChange(JNIEnv *env,jstring publicKey,jint state){
+
+    // 获取 GoBackend 类
+    jclass clazz = (*env)->FindClass(env, "com/wireguard/android/backend/GoBackend");
+    if (clazz == NULL) {
+        return;
+    }
+
+    // 获取 onPeerStateChange 方法的 ID
+    jmethodID methodID = (*env)->GetStaticMethodID(env, clazz, "onPeerStateChange", "(Ljava/lang/String;I)V");
+    if (methodID == NULL) {
+        return;
+    }
+
+    // 调用 Java 层的 OnPeerStateChange 方法
+    (*env)->CallStaticVoidMethod(env,clazz, methodID, publicKey,state);
+//    // 释放 publicKey 字符串对象
+//    (*env)->DeleteLocalRef(env, publicKey);
+}
+*/
+
+
+import "C"
+//go:generate go tool cgo peer_state_manager.go
 import (
 	"sync"
-	"unsafe"
 )
 
 // PeerStateManager 单例模式管理所有监听器
@@ -71,7 +100,7 @@ func (manager *PeerStateManager) NotifyStateChange(publicKey [NoisePublicKeySize
 	var publicKeyStr = string(publicKey[:])
 	// 使用C.CString将Go字符串转换为C字符串
 	cPublicKey := C.CString(publicKeyStr)
-	defer C.free(unsafe.Pointer(cPublicKey))
+	// defer C.free(unsafe.Pointer(cPublicKey))
 
 	// 调用JNI函数
 	C.CallJavaOnPeerStateChange(C.jstring(cPublicKey), C.jint(state))
