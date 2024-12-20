@@ -259,9 +259,9 @@ func (peer *Peer) Stop() {
 		return
 	}
 
-	// Notify all listeners peer created
+	// Notify all listeners peer stopping
 	peerState.GetInstance().NotifyStateChange(peer.publicKey, peerState.Stopping)
-
+	peerState.GetInstance().Destroy()
 	peer.device.log.Verbosef("%v - Stopping", peer)
 
 	peer.timersStop()
