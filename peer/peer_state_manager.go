@@ -1,51 +1,15 @@
 package peerState
 
 /*
-#cgo LDFLAGS: -L. -lGoCallJni
-#include <jni.h>
 #include <stdlib.h>
 
-// 声明将要在 Go 代码中使用的 C 函数
-void CallJavaOnPeerStateChange(JNIEnv *env, jobject obj, jstring state);
-
-static JNIEnv* create_vm(JavaVM jvm) {
-    JNIEnv *env;
-    JavaVMInitArgs vm_args;
-    JavaVMOption options[1];
-    options[0].optionString = "-Djava.class.path=.";
-    vm_args.version = JNI_VERSION_1_6;
-    vm_args.nOptions = 1;
-    vm_args.options = options;
-    vm_args.ignoreUnrecognized = 0;
-    JNI_CreateJavaVM(jvm, (void)&env, &vm_args);
-    return env;
-}
-
-void CallJavaOnPeerStateChange(JNIEnv *env,jstring publicKey,jint state){
-
-    // 获取 GoBackend 类
-    jclass clazz = (*env)->FindClass(env, "com/wireguard/android/backend/GoBackend");
-    if (clazz == NULL) {
-        return;
-    }
-
-    // 获取 onPeerStateChange 方法的 ID
-    jmethodID methodID = (*env)->GetStaticMethodID(env, clazz, "onPeerStateChange", "(Ljava/lang/String;I)V");
-    if (methodID == NULL) {
-        return;
-    }
-
-    // 调用 Java 层的 OnPeerStateChange 方法
-    (*env)->CallStaticVoidMethod(env,clazz, methodID, publicKey,state);
-//    // 释放 publicKey 字符串对象
-//    (*env)->DeleteLocalRef(env, publicKey);
-}
-
+ public void onStateChange() {
+     printlf("~~~~~~~~~~hello cgo~~~~~~~~~~")
+ }
 
 */
-//go:generate go tool cgo peer_state_manager.go
-import "C"
 
+import "C"
 import (
 	"sync"
 )
@@ -110,18 +74,30 @@ func (manager *PeerStateManager) NotifyStateChange(publicKey [NoisePublicKeySize
 		return
 	}
 
-	// 将[32]byte转换为字符串
-	var publicKeyStr = string(publicKey[:])
-	// 使用C.CString将Go字符串转换为C字符串
-	cPublicKey := C.CString(publicKeyStr)
-	// defer C.free(unsafe.Pointer(cPublicKey))
+	C.onStateChange()
 
-	var jvm *C.JavaVM
-    env := C.create_vm(&jvm)
-	// 调用JNI函数
-	C.CallJavaOnPeerStateChange(env,C.jstring(cPublicKey), C.jint(state))
+	// 将[32]byte转换为字符串
+	// var publicKeyStr = string(publicKey[:])
+	// // 使用C.CString将Go字符串转换为C字符串
+	// cPublicKey := C.CString(publicKeyStr)
+	// // defer C.free(unsafe.Pointer(cPublicKey))
+
+    //  // Initialize JVM and obtain JNIEnv
+    //  var jvm *C.JavaVM
+    //  env := C.createJNIEnv(&jvm)
+    //  if env == nil {
+	//     fmt.Println("Failed to create JNIEnv")
+	//     return
+    // }
+	// // 调用JNI函数
+	// C.CallJavaOnPeerStateChange(env,C.jstring(cPublicKey), C.jint(state))
 
 	manager.lastState = state
+
+    // Destroy JVM when done
+    // if jvm != nil {
+	//    C.JNI_DestroyJavaVM(jvm)
+    // }
 
 	// if(len(manager.listeners) == 0 || state == manager.lastState) {
 	// 	//过滤重复状态回调
