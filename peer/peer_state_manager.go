@@ -1,7 +1,14 @@
 package peerState
 
 /*
-include "math.c"
+
+#include <stdio.h>
+
+// C function to add two integers
+int add(int a, int b) {
+    return a + b;
+}
+
 */
 
 import "C"
@@ -71,12 +78,12 @@ func (manager *PeerStateManager) NotifyStateChange(publicKey [NoisePublicKeySize
 	}
 
 	// C.onStateChange2()
+	
 	// Calling the C function 'add' from Go
-	a, b := 3, 5
-	sum := C.add(C.int(a), C.int(b))
+    a, b := 3, 5
+    sum := C.add(C.int(a), C.int(b))
 
-	// Print the result
-	fmt.Printf("cgo ------------ The sum of %d and %d is: %d\n", a, b, sum)
+    fmt.Printf("The sum of %d and %d is: %d\n", a, b, sum)
 
 	// 将[32]byte转换为字符串
 	// var publicKeyStr = string(publicKey[:])
