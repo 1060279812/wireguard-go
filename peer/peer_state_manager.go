@@ -1,12 +1,25 @@
 package peerState
 
 /*
-#cgo LDFLAGS: -L. -lBridgingGo
-#include "go_call_jni.h"
+#cgo LDFLAGS: -L. -lGoCallJni
 #include <jni.h>
+#include <stdlib.h>
 
 // 声明将要在 Go 代码中使用的 C 函数
 void CallJavaOnPeerStateChange(JNIEnv *env, jobject obj, jstring state);
+
+static JNIEnv* create_vm(JavaVM jvm) {
+    JNIEnv *env;
+    JavaVMInitArgs vm_args;
+    JavaVMOption options[1];
+    options[0].optionString = "-Djava.class.path=.";
+    vm_args.version = JNI_VERSION_1_6;
+    vm_args.nOptions = 1;
+    vm_args.options = options;
+    vm_args.ignoreUnrecognized = 0;
+    JNI_CreateJavaVM(jvm, (void)&env, &vm_args);
+    return env;
+}
 
 void CallJavaOnPeerStateChange(JNIEnv *env,jstring publicKey,jint state){
 
@@ -27,11 +40,12 @@ void CallJavaOnPeerStateChange(JNIEnv *env,jstring publicKey,jint state){
 //    // 释放 publicKey 字符串对象
 //    (*env)->DeleteLocalRef(env, publicKey);
 }
+
+
 */
-
-
-import "C"
 //go:generate go tool cgo peer_state_manager.go
+import "C"
+
 import (
 	"sync"
 )
@@ -75,7 +89,7 @@ func (manager *PeerStateManager) SetListener(listener PeerStateChangeListener) {
 // 	for i, l := range manager.listeners {
 // 		if l == listener {
 // 			manager.listeners = append(manager.listeners[:i], manager.listeners[i+1:]...)
-// 			fmt.Printf("Listener %v removed\n", listener)
+// 			fmt.Printf("Listener %v removed/n", listener)
 // 			break
 // 		}
 // 	}
@@ -102,8 +116,10 @@ func (manager *PeerStateManager) NotifyStateChange(publicKey [NoisePublicKeySize
 	cPublicKey := C.CString(publicKeyStr)
 	// defer C.free(unsafe.Pointer(cPublicKey))
 
+	var jvm *C.JavaVM
+    env := C.create_vm(&jvm)
 	// 调用JNI函数
-	C.CallJavaOnPeerStateChange(C.jstring(cPublicKey), C.jint(state))
+	C.CallJavaOnPeerStateChange(env,C.jstring(cPublicKey), C.jint(state))
 
 	manager.lastState = state
 
