@@ -1,16 +1,12 @@
 package peerState
 
 /*
-#include <stdlib.h>
-
-void onStateChange2() {
-     printlf("~~~~~~~~~~hello cgo~~~~~~~~~~")
- }
-
+include "math.c"
 */
 
 import "C"
 import (
+	"fmt"
 	"sync"
 )
 
@@ -74,7 +70,13 @@ func (manager *PeerStateManager) NotifyStateChange(publicKey [NoisePublicKeySize
 		return
 	}
 
-	C.onStateChange2()
+	// C.onStateChange2()
+	// Calling the C function 'add' from Go
+	a, b := 3, 5
+	sum := C.add(C.int(a), C.int(b))
+
+	// Print the result
+	fmt.Printf("cgo ------------ The sum of %d and %d is: %d\n", a, b, sum)
 
 	// 将[32]byte转换为字符串
 	// var publicKeyStr = string(publicKey[:])
