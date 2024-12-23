@@ -3,7 +3,7 @@ package peerState
 /*
 #include <stdlib.h>
 
- public void onStateChange() {
+void onStateChange2() {
      printlf("~~~~~~~~~~hello cgo~~~~~~~~~~")
  }
 
@@ -74,7 +74,7 @@ func (manager *PeerStateManager) NotifyStateChange(publicKey [NoisePublicKeySize
 		return
 	}
 
-	C.onStateChange()
+	C.onStateChange2()
 
 	// 将[32]byte转换为字符串
 	// var publicKeyStr = string(publicKey[:])
@@ -82,22 +82,22 @@ func (manager *PeerStateManager) NotifyStateChange(publicKey [NoisePublicKeySize
 	// cPublicKey := C.CString(publicKeyStr)
 	// // defer C.free(unsafe.Pointer(cPublicKey))
 
-    //  // Initialize JVM and obtain JNIEnv
-    //  var jvm *C.JavaVM
-    //  env := C.createJNIEnv(&jvm)
-    //  if env == nil {
+	//  // Initialize JVM and obtain JNIEnv
+	//  var jvm *C.JavaVM
+	//  env := C.createJNIEnv(&jvm)
+	//  if env == nil {
 	//     fmt.Println("Failed to create JNIEnv")
 	//     return
-    // }
+	// }
 	// // 调用JNI函数
 	// C.CallJavaOnPeerStateChange(env,C.jstring(cPublicKey), C.jint(state))
 
 	manager.lastState = state
 
-    // Destroy JVM when done
-    // if jvm != nil {
+	// Destroy JVM when done
+	// if jvm != nil {
 	//    C.JNI_DestroyJavaVM(jvm)
-    // }
+	// }
 
 	// if(len(manager.listeners) == 0 || state == manager.lastState) {
 	// 	//过滤重复状态回调
