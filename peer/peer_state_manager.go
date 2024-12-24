@@ -1,20 +1,60 @@
 package peerState
 
 /*
+#include <jni.h>
+#include <stdlib.h>
 
-#include <stdio.h>
+// 声明将要在 Go 代码中使用的 C 函数
+void CallJavaOnPeerStateChange(JNIEnv *env,char *publicKey,int state){
+     if(env == NULL){
+        return;
+    }
+    // 获取 GoBackend 类
+    jclass clazz = (*env)->FindClass(env, "com/wireguard/android/backend/GoBackend");
+    if (clazz == NULL) {
+        return;
+    }
 
-// C function to add two integers
-int add(int a, int b) {
-    return a + b;
+    // 获取 onPeerStateChange 方法的 ID
+    jmethodID methodID = (*env)->GetStaticMethodID(env, clazz, "onPeerStateChange", "(Ljava/lang/String;I)V");
+    if (methodID == NULL) {
+        return;
+    }
+
+    // 使用 NewStringUTF 方法将 C 字符串转换为 Java 字符串 (jstring)
+    jstring publicKeyStr = (*env)->NewStringUTF(env, publicKey);
+    // 调用 Java 层的 OnPeerStateChange 方法
+    (*env)->CallStaticVoidMethod(env,clazz, methodID, publicKeyStr,state);
+//    // 释放 publicKey 字符串对象
+//    (*env)->DeleteLocalRef(env, publicKey);
+
+ }
+
+// Helper function to initialize JVM and get JNIEnv
+JNIEnv* createJNIEnv(JavaVM **jvm) {
+    JavaVMInitArgs vmArgs;
+    JavaVMOption options[1];
+
+    // Set classpath to find Java classes
+    options[0].optionString = "-Djava.class.path=.";
+    vmArgs.version = JNI_VERSION_1_6;
+    vmArgs.nOptions = 1;
+    vmArgs.options = options;
+    vmArgs.ignoreUnrecognized = JNI_FALSE;
+
+    JNIEnv *env;
+    int res = JNI_CreateJavaVM(jvm, (JNIEnv **) (void **) &env, &vmArgs);
+    if (res < 0) {
+        return NULL;
+    }
+    return env;
 }
-
 */
-
 import "C"
 import (
 	"fmt"
 	"sync"
+	"unsafe"
 )
 
 // PeerStateManager 单例模式管理所有监听器
@@ -67,6 +107,8 @@ func (manager *PeerStateManager) NotifyStateChange(publicKey [NoisePublicKeySize
 	manager.lock.Lock()
 	defer manager.lock.Unlock()
 
+        fmt.Printf("------NotifyStateChange()-> %s \n",state)
+
 	if state == manager.lastState {
 		//过滤重复状态回调
 		return
@@ -77,29 +119,21 @@ func (manager *PeerStateManager) NotifyStateChange(publicKey [NoisePublicKeySize
 		return
 	}
 
-	// C.onStateChange2()
-	
-	// Calling the C function 'add' from Go
-    a, b := 3, 5
-    sum := C.add(C.int(a), C.int(b))
-
-    fmt.Printf("The sum of %d and %d is: %d\n", a, b, sum)
-
 	// 将[32]byte转换为字符串
-	// var publicKeyStr = string(publicKey[:])
-	// // 使用C.CString将Go字符串转换为C字符串
-	// cPublicKey := C.CString(publicKeyStr)
-	// // defer C.free(unsafe.Pointer(cPublicKey))
+	 var publicKeyStr = string(publicKey[:])
+	 // 使用C.CString将Go字符串转换为C字符串
+	 cPublicKey := C.CString(publicKeyStr)
+	 defer C.free(unsafe.Pointer(cPublicKey))
 
-	//  // Initialize JVM and obtain JNIEnv
-	//  var jvm *C.JavaVM
-	//  env := C.createJNIEnv(&jvm)
-	//  if env == nil {
-	//     fmt.Println("Failed to create JNIEnv")
-	//     return
-	// }
-	// // 调用JNI函数
-	// C.CallJavaOnPeerStateChange(env,C.jstring(cPublicKey), C.jint(state))
+	  // Initialize JVM and obtain JNIEnv
+	  var jvm *C.JavaVM
+	  env := C.createJNIEnv(&jvm)
+	  if env == nil {
+	     fmt.Println("Failed to create JNIEnv")
+	     return
+	 }
+	 // 调用JNI函数
+	 C.CallJavaOnPeerStateChange(env, cPublicKey, C.int(state))
 
 	manager.lastState = state
 
