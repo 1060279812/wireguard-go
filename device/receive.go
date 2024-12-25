@@ -403,7 +403,7 @@ func (peer *Peer) RoutineSequentialReceiver() {
 		device.log.Verbosef("%v - Routine: sequential receiver - stopped", peer)
 		peer.stopping.Done()
 	}()
-	device.log.Verbosef("%v - Routine: sequential receiver - started", peer)
+	device.log.Verbosef("%v - Routine: sequential receiver - started----------", peer)
 
 	for elem := range peer.queue.inbound.c {
 		if elem == nil {

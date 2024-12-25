@@ -143,6 +143,8 @@ func (device *Device) IpcSetOperation(r io.Reader) (err error) {
 	device.ipcMutex.Lock()
 	defer device.ipcMutex.Unlock()
 
+	device.log.Verbosef("UAPI: IpcSetOperation()-------------")
+
 	defer func() {
 		if err != nil {
 			device.log.Errorf("%v", err)
@@ -157,6 +159,7 @@ func (device *Device) IpcSetOperation(r io.Reader) (err error) {
 		line := scanner.Text()
 		if line == "" {
 			// Blank line means terminate operation.
+			device.log.Verbosef("%v - UAPI: IpcSetOperation()  handlePostConfig()1111-------------", peer)
 			peer.handlePostConfig()
 			return nil
 		}
@@ -169,6 +172,7 @@ func (device *Device) IpcSetOperation(r io.Reader) (err error) {
 			if deviceConfig {
 				deviceConfig = false
 			}
+			device.log.Verbosef("%v - UAPI: IpcSetOperation()  handlePostConfig()2222-------------", peer)
 			peer.handlePostConfig()
 			// Load/create the peer we are now configuring.
 			err := device.handlePublicKeyLine(peer, value)
@@ -180,14 +184,17 @@ func (device *Device) IpcSetOperation(r io.Reader) (err error) {
 
 		var err error
 		if deviceConfig {
+			device.log.Verbosef("%v - UAPI: IpcSetOperation()  handleDeviceLine()2222-------------", peer)
 			err = device.handleDeviceLine(key, value)
 		} else {
+			device.log.Verbosef("%v - UAPI: IpcSetOperation()  handlePeerLine()2222-------------", peer)
 			err = device.handlePeerLine(peer, key, value)
 		}
 		if err != nil {
 			return err
 		}
 	}
+	device.log.Verbosef("%v - UAPI: IpcSetOperation()  handlePeerLine()0000-------------")
 	peer.handlePostConfig()
 
 	if err := scanner.Err(); err != nil {
@@ -264,7 +271,9 @@ func (peer *ipcSetPeer) handlePostConfig() {
 	if peer.created {
 		peer.disableRoaming = peer.device.net.brokenRoaming && peer.endpoint != nil
 	}
+	peer.device.log.Verbosef("%v - UAPI: handlePostConfig()  8888-------------", peer)
 	if peer.device.isUp() {
+		peer.device.log.Verbosef("%v - UAPI: handlePostConfig()  9999-------------", peer)
 		peer.Start()
 		if peer.pkaOn {
 			peer.SendKeepalive()

@@ -108,7 +108,7 @@ func (device *Device) NewPeer(pk NoisePublicKey) (*Peer, error) {
 
 	// add
 	device.peers.keyMap[pk] = peer
-    
+
 	//当前当前peer的publicKey
 	peer.publicKey = pk
 
