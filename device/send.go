@@ -128,6 +128,9 @@ func (peer *Peer) SendHandshakeInitiation(isRetry bool) error {
 
 	err = peer.SendBuffer(packet)
 	if err != nil {
+
+		peerState.GetInstance().NotifyStateChange(peer.publicKey, peerState.HandshakeFailedForNetwork)
+
 		peer.device.log.Errorf("%v - Failed to send handshake initiation: %v", peer, err)
 	}
 	peer.timersHandshakeInitiated()
@@ -406,7 +409,7 @@ func (device *Device) RoutineEncryption(id int) {
  * Obs. Single instance per peer.
  * The routine terminates then the outbound queue is closed.
  */
-func (peer *Peer) RoutineSequentialSender() {
+func (peer *Peer) RoutineSequentialSender(mainGoroutine func(publicKey [32]byte, state peerState.State)) {
 	device := peer.device
 	defer func() {
 		defer device.log.Verbosef("%v - Routine: sequential sender - stopped", peer)
@@ -415,9 +418,7 @@ func (peer *Peer) RoutineSequentialSender() {
 	device.log.Verbosef("%v - Routine: sequential sender - started", peer)
 
 	for elem := range peer.queue.outbound.c {
-		device.log.Verbosef("%v - Routine: sequential sender - for elem := range peer.queue.outbound.c", peer)
 		if elem == nil {
-			device.log.Verbosef("%v - Routine: sequential sender - for elem := range peer.queue.outbound.c if elem == nil", peer)
 			return
 		}
 		elem.Lock()
@@ -430,7 +431,6 @@ func (peer *Peer) RoutineSequentialSender() {
 			// that we never accidentally keep timers alive longer than necessary.
 			device.PutMessageBuffer(elem.buffer)
 			device.PutOutboundElement(elem)
-			device.log.Verbosef("%v - Routine: sequential sender - for elem := range peer.queue.outbound.c continue", peer)
 			continue
 		}
 
@@ -438,7 +438,6 @@ func (peer *Peer) RoutineSequentialSender() {
 		peer.timersAnyAuthenticatedPacketSent()
 
 		// send message and return buffer to pool
-		device.log.Verbosef("%v - Routine: sequential sender - for elem := range peer.queue.outbound.c continue", peer)
 
 		err := peer.SendBuffer(elem.packet)
 		if len(elem.packet) != MessageKeepaliveSize {
@@ -449,7 +448,8 @@ func (peer *Peer) RoutineSequentialSender() {
 		if err != nil {
 
 			// Notify all listeners that the Failed to send data packet
-			peerState.GetInstance().NotifyStateChange(peer.publicKey, peerState.HandshakeFailedForNetwork)
+			mainGoroutine(peer.publicKey, peerState.HandshakeFailedForNetwork)
+			//peerState.GetInstance().NotifyStateChange(peer.publicKey, peerState.HandshakeFailedForNetwork)
 
 			device.log.Errorf("%v - Failed to send data packet: %v", peer, err)
 			continue

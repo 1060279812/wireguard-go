@@ -8,10 +8,10 @@
 package device
 
 import (
+	peerState "github.com/1060279812/wireguard-go/peer"
 	"sync"
 	"time"
 	_ "unsafe"
-	"github.com/1060279812/wireguard-go/peer"
 )
 
 //go:linkname fastrandn runtime.fastrandn
@@ -41,6 +41,27 @@ func (peer *Peer) NewTimer(expirationFunction func(*Peer)) *Timer {
 		timer.modifyingLock.Unlock()
 
 		expirationFunction(peer)
+	})
+	timer.Stop()
+	return timer
+}
+
+func (peer *Peer) NewTimer2(expirationFunction func(peer *Peer, mainGoroutine func(publicKey [32]byte, state peerState.State)),
+	mainGoroutine func(publicKey [32]byte, state peerState.State)) *Timer {
+	timer := &Timer{}
+	timer.Timer = time.AfterFunc(time.Hour, func() {
+		timer.runningLock.Lock()
+		defer timer.runningLock.Unlock()
+
+		timer.modifyingLock.Lock()
+		if !timer.isPending {
+			timer.modifyingLock.Unlock()
+			return
+		}
+		timer.isPending = false
+		timer.modifyingLock.Unlock()
+
+		expirationFunction(peer, mainGoroutine)
 	})
 	timer.Stop()
 	return timer
@@ -77,13 +98,14 @@ func (peer *Peer) timersActive() bool {
 	return peer.isRunning.Load() && peer.device != nil && peer.device.isUp()
 }
 
-func expiredRetransmitHandshake(peer *Peer) {
+func expiredRetransmitHandshake(peer *Peer, mainGoroutine func(publicKey [32]byte, state peerState.State)) {
 	if peer.timers.handshakeAttempts.Load() > MaxTimerHandshakes {
 		peer.device.log.Verbosef("%s - Handshake did not complete after %d attempts, giving up", peer, MaxTimerHandshakes+2)
-		
+
 		// Notify all listeners that the handshake failed
-		peerState.GetInstance().NotifyStateChange(peer.publicKey, peerState.HandshakeFailedForOther)
-		
+		//peerState.GetInstance().NotifyStateChange(peer.publicKey, peerState.HandshakeFailedForOther)
+		mainGoroutine(peer.publicKey, peerState.HandshakeFailedForOther)
+
 		if peer.timersActive() {
 			peer.timers.sendKeepalive.Del()
 		}
@@ -99,13 +121,15 @@ func expiredRetransmitHandshake(peer *Peer) {
 		if peer.timersActive() && !peer.timers.zeroKeyMaterial.IsPending() {
 			peer.timers.zeroKeyMaterial.Mod(RejectAfterTime * 3)
 		}
+
 	} else {
 		peer.timers.handshakeAttempts.Add(1)
 		peer.device.log.Verbosef("%s - Handshake did not complete after %d seconds, retrying (try %d)", peer, int(RekeyTimeout.Seconds()), peer.timers.handshakeAttempts.Load()+1)
-		
+
 		// Notify all listeners that the handshake failed
-		peerState.GetInstance().NotifyStateChange(peer.publicKey, peerState.HandshakeFailedForOther)
-		
+		//peerState.GetInstance().NotifyStateChange(peer.publicKey, peerState.HandshakeFailedForOther)
+		mainGoroutine(peer.publicKey, peerState.HandshakeFailedForOther)
+
 		/* We clear the endpoint address src address, in case this is the cause of trouble. */
 		peer.Lock()
 		if peer.endpoint != nil {
@@ -126,11 +150,10 @@ func expiredSendKeepalive(peer *Peer) {
 		}
 	}
 }
-
-func expiredNewHandshake(peer *Peer) {
-
+func expiredNewHandshake(peer *Peer, mainGoroutine func(publicKey [32]byte, state peerState.State)) {
 	// Notify all listeners that the handshake failed
-	peerState.GetInstance().NotifyStateChange(peer.publicKey, peerState.HandshakeFailedForOther)
+	//peerState.GetInstance().NotifyStateChange(peer.publicKey, peerState.HandshakeFailedForOther)
+	//mainGoroutine(peer.publicKey, peerState.HandshakeFailedForOther)
 
 	peer.device.log.Verbosef("%s - Retrying handshake because we stopped hearing back after %d seconds", peer, int((KeepaliveTimeout + RekeyTimeout).Seconds()))
 	/* We clear the endpoint address src address, in case this is the cause of trouble. */
@@ -140,6 +163,8 @@ func expiredNewHandshake(peer *Peer) {
 	}
 	peer.Unlock()
 	peer.SendHandshakeInitiation(false)
+
+	mainGoroutine(peer.publicKey, peerState.HandshakeFailedForOther)
 }
 
 func expiredZeroKeyMaterial(peer *Peer) {
@@ -218,11 +243,28 @@ func (peer *Peer) timersAnyAuthenticatedPacketTraversal() {
 }
 
 func (peer *Peer) timersInit() {
-	peer.timers.retransmitHandshake = peer.NewTimer(expiredRetransmitHandshake)
+	// 定义一个回调函数，主 Goroutine 中的函数
+	callbackMain := func(publicKey [NoisePublicKeySize]byte, state peerState.State) {
+		peer.device.log.Verbosef("%v - Main Goroutine: Executing NotifyStateChange()-333", peer)
+		// 锁定当前 goroutine 到操作系统线程
+		//runtime.LockOSThread()
+		//defer runtime.UnlockOSThread()
+		peerState.GetInstance().NotifyStateChange(publicKey, state)
+	}
+	// 创建一个通道，用于在Goroutine之间传递信号
+	//done := make(chan func(publicKey [32]byte, state peerState.State))
+
+	peer.timers.retransmitHandshake = peer.NewTimer2(expiredRetransmitHandshake, callbackMain)
 	peer.timers.sendKeepalive = peer.NewTimer(expiredSendKeepalive)
-	peer.timers.newHandshake = peer.NewTimer(expiredNewHandshake)
+	peer.timers.newHandshake = peer.NewTimer2(expiredNewHandshake, callbackMain)
 	peer.timers.zeroKeyMaterial = peer.NewTimer(expiredZeroKeyMaterial)
 	peer.timers.persistentKeepalive = peer.NewTimer(expiredPersistentKeepalive)
+
+	//callbackMain = <-done // 等待子Goroutine通过通道发送的信号
+	// 主协程等待并接收子协程发送的数据
+	//result := <-done
+	//peer.device.log.Verbosef("%v - Received data from child timers Goroutine: publicKey = %v, state = %s\n", result.publicKey, result.state, peer)
+	//peerState.GetInstance().NotifyStateChange(result.publicKey, result.state)
 }
 
 func (peer *Peer) timersStart() {

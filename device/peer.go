@@ -186,6 +186,15 @@ func (peer *Peer) Start() {
 	// Notify all listeners peer starting
 	peerState.GetInstance().NotifyStateChange(peer.publicKey, peerState.Starting)
 
+	// 定义一个回调函数，主 Goroutine 中的函数
+	callbackMain := func(publicKey [NoisePublicKeySize]byte, state peerState.State) {
+		peer.device.log.Verbosef("%v - Main Goroutine: Executing NotifyStateChange()-222", peer)
+		//	// 锁定当前 goroutine 到操作系统线程
+		//runtime.LockOSThread()
+		peerState.GetInstance().NotifyStateChange(publicKey, state)
+		//defer runtime.UnlockOSThread()
+	}
+
 	// reset routine state
 	peer.stopping.Wait()
 	peer.stopping.Add(2)
@@ -200,7 +209,7 @@ func (peer *Peer) Start() {
 
 	device.flushInboundQueue(peer.queue.inbound)
 	device.flushOutboundQueue(peer.queue.outbound)
-	go peer.RoutineSequentialSender()
+	go peer.RoutineSequentialSender(callbackMain)
 	go peer.RoutineSequentialReceiver()
 
 	peer.isRunning.Store(true)

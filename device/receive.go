@@ -9,12 +9,12 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
+	peerState "github.com/1060279812/wireguard-go/peer"
 	"net"
 	"sync"
 	"time"
 
 	"github.com/1060279812/wireguard-go/conn"
-	"github.com/1060279812/wireguard-go/peer"
 	"golang.org/x/crypto/chacha20poly1305"
 	"golang.org/x/net/ipv4"
 	"golang.org/x/net/ipv6"
@@ -233,7 +233,7 @@ func (device *Device) RoutineDecryption(id int) {
 
 /* Handles incoming packets related to handshake
  */
-func (device *Device) RoutineHandshake(id int) {
+func (device *Device) RoutineHandshake(id int, mainGoroutine func(publicKey [32]byte, state peerState.State)) {
 	defer func() {
 		device.log.Verbosef("Routine: handshake worker %d - stopped", id)
 		device.queue.encryption.wg.Done()
@@ -369,7 +369,7 @@ func (device *Device) RoutineHandshake(id int) {
 			peer.SetEndpointFromPacket(elem.endpoint)
 
 			// Notify all listeners Received handshake response
-			peerState.GetInstance().NotifyStateChange(peer.publicKey, peerState.HandshakeSuccess)
+			mainGoroutine(peer.publicKey, peerState.HandshakeSuccess)
 
 			device.log.Verbosef("%v - Received handshake response", peer)
 			peer.rxBytes.Add(uint64(len(elem.packet)))

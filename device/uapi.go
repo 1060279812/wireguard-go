@@ -143,8 +143,6 @@ func (device *Device) IpcSetOperation(r io.Reader) (err error) {
 	device.ipcMutex.Lock()
 	defer device.ipcMutex.Unlock()
 
-	device.log.Verbosef("UAPI: IpcSetOperation()-------------")
-
 	defer func() {
 		if err != nil {
 			device.log.Errorf("%v", err)
@@ -159,7 +157,6 @@ func (device *Device) IpcSetOperation(r io.Reader) (err error) {
 		line := scanner.Text()
 		if line == "" {
 			// Blank line means terminate operation.
-			device.log.Verbosef("%v - UAPI: IpcSetOperation()  handlePostConfig()1111-------------", peer)
 			peer.handlePostConfig()
 			return nil
 		}
@@ -184,7 +181,6 @@ func (device *Device) IpcSetOperation(r io.Reader) (err error) {
 
 		var err error
 		if deviceConfig {
-			device.log.Verbosef("%v - UAPI: IpcSetOperation()  handleDeviceLine()2222-------------", peer)
 			err = device.handleDeviceLine(key, value)
 		} else {
 			device.log.Verbosef("%v - UAPI: IpcSetOperation()  handlePeerLine()2222-------------", peer)
@@ -194,7 +190,6 @@ func (device *Device) IpcSetOperation(r io.Reader) (err error) {
 			return err
 		}
 	}
-	device.log.Verbosef("%v - UAPI: IpcSetOperation()  handlePeerLine()0000-------------")
 	peer.handlePostConfig()
 
 	if err := scanner.Err(); err != nil {
@@ -271,9 +266,7 @@ func (peer *ipcSetPeer) handlePostConfig() {
 	if peer.created {
 		peer.disableRoaming = peer.device.net.brokenRoaming && peer.endpoint != nil
 	}
-	peer.device.log.Verbosef("%v - UAPI: handlePostConfig()  8888-------------", peer)
 	if peer.device.isUp() {
-		peer.device.log.Verbosef("%v - UAPI: handlePostConfig()  9999-------------", peer)
 		peer.Start()
 		if peer.pkaOn {
 			peer.SendKeepalive()
@@ -302,8 +295,10 @@ func (device *Device) handlePublicKeyLine(peer *ipcSetPeer, value string) error 
 	}
 
 	peer.created = peer.Peer == nil
+	device.log.Verbosef("UAPI: IpcSetOperation()  handlePublicKeyLine()2222   NewPeer before-------------")
 	if peer.created {
 		peer.Peer, err = device.NewPeer(publicKey)
+		device.log.Verbosef("%v - UAPI: IpcSetOperation()  handlePublicKeyLine()2222   NewPeer after-------------", peer)
 		if err != nil {
 			return ipcErrorf(ipc.IpcErrorInvalid, "failed to create new peer: %w", err)
 		}

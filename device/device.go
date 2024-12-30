@@ -6,6 +6,7 @@
 package device
 
 import (
+	"github.com/1060279812/wireguard-go/peer"
 	"runtime"
 	"sync"
 	"sync/atomic"
@@ -305,13 +306,22 @@ func NewDevice(tunDevice tun.Device, bind conn.Bind, logger *Logger) *Device {
 
 	// start workers
 
+	// 定义一个回调函数，主 Goroutine 中的函数
+	callbackMain := func(publicKey [NoisePublicKeySize]byte, state peerState.State) {
+		device.log.Verbosef("Main Goroutine: Executing NotifyStateChange()-111")
+		//	// 锁定当前 goroutine 到操作系统线程
+		//runtime.LockOSThread()
+		peerState.GetInstance().NotifyStateChange(publicKey, state)
+		//defer runtime.UnlockOSThread()
+	}
+
 	cpus := runtime.NumCPU()
 	device.state.stopping.Wait()
 	device.queue.encryption.wg.Add(cpus) // One for each RoutineHandshake
 	for i := 0; i < cpus; i++ {
 		go device.RoutineEncryption(i + 1)
 		go device.RoutineDecryption(i + 1)
-		go device.RoutineHandshake(i + 1)
+		go device.RoutineHandshake(i+1, callbackMain)
 	}
 
 	device.state.stopping.Add(1)      // RoutineReadFromTUN
