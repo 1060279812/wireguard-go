@@ -14,8 +14,10 @@ const (
 var PeerStateCallChan = make(chan PeerStateCallStruct)
 
 func NotifyPeerStateChange(peerStateS PeerStateCallStruct) {
-	PeerStateCallChan = make(chan PeerStateCallStruct)
 	PeerStateCallChan <- peerStateS
+}
+
+func closePeerStateCallChan() {
 	close(PeerStateCallChan)
 }
 
