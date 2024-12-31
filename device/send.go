@@ -131,12 +131,11 @@ func (peer *Peer) SendHandshakeInitiation(isRetry bool) error {
 	if err != nil {
 
 		//peerState.GetInstance().NotifyStateChange(peer.publicKey, peerState.HandshakeFailedForNetwork)
-		peerState := call.PeerStateCallStruct{
+		call.NotifyPeerStateChange(call.PeerStateCallStruct{
 			Platform:  call.Android,
 			PublicKey: peer.publicKey,
 			State:     peerState.HandshakeFailedForNetwork,
-		}
-		call.GlobalPeerCallChannel <- peerState // 发送结构体数据到通道
+		}) // 发送结构体数据到主协程
 
 		peer.device.log.Errorf("%v - Failed to send handshake initiation: %v", peer, err)
 	}
@@ -455,8 +454,13 @@ func (peer *Peer) RoutineSequentialSender(mainGoroutine func(publicKey [32]byte,
 		if err != nil {
 
 			// Notify all listeners that the Failed to send data packet
-			mainGoroutine(peer.publicKey, peerState.HandshakeFailedForNetwork)
+			//mainGoroutine(peer.publicKey, peerState.HandshakeFailedForNetwork)
 			//peerState.GetInstance().NotifyStateChange(peer.publicKey, peerState.HandshakeFailedForNetwork)
+			call.NotifyPeerStateChange(call.PeerStateCallStruct{
+				Platform:  call.Android,
+				PublicKey: peer.publicKey,
+				State:     peerState.HandshakeFailedForNetwork,
+			}) // 发送结构体数据到主协程
 
 			device.log.Errorf("%v - Failed to send data packet: %v", peer, err)
 			continue

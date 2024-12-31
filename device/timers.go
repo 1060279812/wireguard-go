@@ -106,12 +106,11 @@ func expiredRetransmitHandshake(peer *Peer, mainGoroutine func(publicKey [32]byt
 		// Notify all listeners that the handshake failed
 		//peerState.GetInstance().NotifyStateChange(peer.publicKey, peerState.HandshakeFailedForOther)
 		//mainGoroutine(peer.publicKey, peerState.HandshakeFailedForOther)
-		peerState := call.PeerStateCallStruct{
+		call.NotifyPeerStateChange(call.PeerStateCallStruct{
 			Platform:  call.Android,
 			PublicKey: peer.publicKey,
 			State:     peerState.HandshakeFailedForOther,
-		}
-		call.GlobalPeerCallChannel <- peerState // 发送结构体数据到通道
+		}) // 发送结构体数据到主协程
 
 		if peer.timersActive() {
 			peer.timers.sendKeepalive.Del()
@@ -136,13 +135,11 @@ func expiredRetransmitHandshake(peer *Peer, mainGoroutine func(publicKey [32]byt
 		// Notify all listeners that the handshake failed
 		//peerState.GetInstance().NotifyStateChange(peer.publicKey, peerState.HandshakeFailedForOther)
 		//mainGoroutine(peer.publicKey, peerState.HandshakeFailedForOther)
-
-		peerState := call.PeerStateCallStruct{
+		call.NotifyPeerStateChange(call.PeerStateCallStruct{
 			Platform:  call.Android,
 			PublicKey: peer.publicKey,
 			State:     peerState.HandshakeFailedForOther,
-		}
-		call.GlobalPeerCallChannel <- peerState // 发送结构体数据到通道
+		}) // 发送结构体数据到主协程
 
 		/* We clear the endpoint address src address, in case this is the cause of trouble. */
 		peer.Lock()
@@ -179,12 +176,11 @@ func expiredNewHandshake(peer *Peer, mainGoroutine func(publicKey [32]byte, stat
 	peer.SendHandshakeInitiation(false)
 
 	//mainGoroutine(peer.publicKey, peerState.HandshakeFailedForOther)
-	peerState := call.PeerStateCallStruct{
+	call.NotifyPeerStateChange(call.PeerStateCallStruct{
 		Platform:  call.Android,
 		PublicKey: peer.publicKey,
 		State:     peerState.HandshakeFailedForOther,
-	}
-	call.GlobalPeerCallChannel <- peerState // 发送结构体数据到通道
+	}) // 发送结构体数据到主协程
 }
 
 func expiredZeroKeyMaterial(peer *Peer) {

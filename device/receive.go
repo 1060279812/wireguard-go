@@ -371,13 +371,11 @@ func (device *Device) RoutineHandshake(id int, mainGoroutine func(publicKey [32]
 
 			// Notify all listeners Received handshake response
 			//mainGoroutine(peer.publicKey, peerState.HandshakeSuccess)
-
-			peerState := call.PeerStateCallStruct{
+			call.NotifyPeerStateChange(call.PeerStateCallStruct{
 				Platform:  call.Android,
 				PublicKey: peer.publicKey,
 				State:     peerState.HandshakeSuccess,
-			}
-			call.GlobalPeerCallChannel <- peerState // 发送结构体数据到通道
+			}) // 发送结构体数据到主协程
 
 			device.log.Verbosef("%v - Received handshake response", peer)
 			peer.rxBytes.Add(uint64(len(elem.packet)))

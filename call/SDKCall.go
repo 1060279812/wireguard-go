@@ -11,7 +11,13 @@ const (
 )
 
 // 定义一个全局的Channel
-var GlobalPeerCallChannel = make(chan PeerStateCallStruct)
+var PeerStateCallChan = make(chan PeerStateCallStruct)
+
+func NotifyPeerStateChange(peerStateS PeerStateCallStruct) {
+	PeerStateCallChan = make(chan PeerStateCallStruct)
+	PeerStateCallChan <- peerStateS
+	close(PeerStateCallChan)
+}
 
 type PeerStateCallStruct struct {
 	Platform  Platform
