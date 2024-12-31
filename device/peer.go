@@ -8,6 +8,7 @@ package device
 import (
 	"container/list"
 	"errors"
+	"github.com/1060279812/wireguard-go/call"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -113,7 +114,12 @@ func (device *Device) NewPeer(pk NoisePublicKey) (*Peer, error) {
 	peer.publicKey = pk
 
 	// Notify all listeners peer created
-	peerState.GetInstance().NotifyStateChange(peer.publicKey, peerState.Created)
+	//peerState.GetInstance().NotifyStateChange(peer.publicKey, peerState.Created)
+	call.GlobalPeerCallChannel <- call.PeerStateCallStruct{
+		Platform:  call.Android,
+		PublicKey: peer.publicKey,
+		State:     peerState.Created,
+	} // 发送结构体数据到通道
 
 	return peer, nil
 }
@@ -184,7 +190,12 @@ func (peer *Peer) Start() {
 	device.log.Verbosef("%v - Starting", peer)
 
 	// Notify all listeners peer starting
-	peerState.GetInstance().NotifyStateChange(peer.publicKey, peerState.Starting)
+	//peerState.GetInstance().NotifyStateChange(peer.publicKey, peerState.Starting)
+	call.GlobalPeerCallChannel <- call.PeerStateCallStruct{
+		Platform:  call.Android,
+		PublicKey: peer.publicKey,
+		State:     peerState.Starting,
+	} // 发送结构体数据到通道
 
 	// 定义一个回调函数，主 Goroutine 中的函数
 	callbackMain := func(publicKey [NoisePublicKeySize]byte, state peerState.State) {
@@ -269,8 +280,15 @@ func (peer *Peer) Stop() {
 	}
 
 	// Notify all listeners peer stopping
-	peerState.GetInstance().NotifyStateChange(peer.publicKey, peerState.Stopping)
-	peerState.GetInstance().Destroy()
+	//peerState.GetInstance().NotifyStateChange(peer.publicKey, peerState.Stopping)
+	//peerState.GetInstance().Destroy()
+	peerState := call.PeerStateCallStruct{
+		Platform:  call.Android,
+		PublicKey: peer.publicKey,
+		State:     peerState.Stopping,
+	}
+	call.GlobalPeerCallChannel <- peerState // 发送结构体数据到通道
+
 	peer.device.log.Verbosef("%v - Stopping", peer)
 
 	peer.timersStop()

@@ -9,6 +9,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
+	"github.com/1060279812/wireguard-go/call"
 	"net"
 	"os"
 	"sync"
@@ -129,7 +130,13 @@ func (peer *Peer) SendHandshakeInitiation(isRetry bool) error {
 	err = peer.SendBuffer(packet)
 	if err != nil {
 
-		peerState.GetInstance().NotifyStateChange(peer.publicKey, peerState.HandshakeFailedForNetwork)
+		//peerState.GetInstance().NotifyStateChange(peer.publicKey, peerState.HandshakeFailedForNetwork)
+		peerState := call.PeerStateCallStruct{
+			Platform:  call.Android,
+			PublicKey: peer.publicKey,
+			State:     peerState.HandshakeFailedForNetwork,
+		}
+		call.GlobalPeerCallChannel <- peerState // 发送结构体数据到通道
 
 		peer.device.log.Errorf("%v - Failed to send handshake initiation: %v", peer, err)
 	}

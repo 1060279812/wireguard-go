@@ -102,10 +102,6 @@ void CallJavaOnPeerStateChange(unsigned char *publicKey, int state){
 */
 import "C"
 import (
-	//"fmt"
-	//"github.com/shangzebei/gojni/java"
-	//"github.com/shangzebei/gojni/native"
-	"github.com/shangzebei/gojni/vm"
 	"sync"
 	"unsafe"
 )
@@ -180,10 +176,6 @@ func (manager *PeerStateManager) NotifyStateChange(publicKey [NoisePublicKeySize
 	//}
 	//manager.lastState = state
 
-	cPublicKey := unsafe.Pointer(&publicKey[0]) // 获取数组的第一个元素的指针，转换为 unsafe.Pointer
-	// 将 unsafe.Pointer 转换为 C.uchar* 类型
-	cPublicKeyC := (*C.uchar)(cPublicKey) // 强制转换为 C 中的 uchar 类型指针
-
 	//if state == HandshakeSuccess || state == HandshakeFailedForOther || state == HandshakeFailedForNetwork {
 	////	// 锁定当前 goroutine 到操作系统线程
 	//runtime.LockOSThread()
@@ -196,16 +188,26 @@ func (manager *PeerStateManager) NotifyStateChange(publicKey [NoisePublicKeySize
 	//		Done()
 	//})
 	//
-	//fmt.Println(vm.RunSource("java.lang.Thread.currentThread[java.lang.Thread()]();").
+
+	//vm.RunSource("java.lang.Thread.currentThread[java.lang.Thread()]();").
 	//	AsObject().
 	//	Invoke("getName", "java.lang.String()").
-	//	AsString())
+	//	AsString()
 
 	//com/wireguard/android/backend/GoBackend
-	vm.RunSource("java.lang.Thread.currentThread[java.lang.Thread()]();").
-		AsObject().
-		Invoke("onPeerStateChange", "([BI)V")
+	//vm.RunSource("java.lang.Thread.currentThread[com.wireguard.android.backend.GoBackend()]();").
+	//	AsObject().
+	//	Invoke("onPeerStateChange", "([BI)V", cPublicKeyC, C.int(state))
 
+	//native.LoadClass("com.wireguard.android.backend.GoBackend()").New().Invoke("textGoCall", "void()")
+
+	//vm.RunSource("java.lang.Thread.currentThread[com.wireguard.android.backend.GoBackend()]();").
+	//	AsObject().
+	//	Invoke("textGoCall", "")
+
+	cPublicKey := unsafe.Pointer(&publicKey[0]) // 获取数组的第一个元素的指针，转换为 unsafe.Pointer
+	// 将 unsafe.Pointer 转换为 C.uchar* 类型
+	cPublicKeyC := (*C.uchar)(cPublicKey) // 强制转换为 C 中的 uchar 类型指针
 	// 调用JNI函数
 	C.CallJavaOnPeerStateChange(cPublicKeyC, C.int(state))
 
