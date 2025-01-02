@@ -8,7 +8,6 @@
 package device
 
 import (
-	"github.com/1060279812/wireguard-go/call"
 	peerState "github.com/1060279812/wireguard-go/peer"
 	"sync"
 	"time"
@@ -104,8 +103,9 @@ func expiredRetransmitHandshake(peer *Peer, mainGoroutine func(publicKey [32]byt
 		peer.device.log.Verbosef("%s - Handshake did not complete after %d attempts, giving up", peer, MaxTimerHandshakes+2)
 
 		// Notify all listeners that the handshake failed
-		//peerState.GetInstance().NotifyStateChange(peer.publicKey, peerState.HandshakeFailedForOther)
-		mainGoroutine(peer.publicKey, peerState.HandshakeFailedForOther)
+		peerState.GetInstance().NotifyStateChange(peer.publicKey, peerState.HandshakeFailedForOther)
+
+		//mainGoroutine(peer.publicKey, peerState.HandshakeFailedForOther)
 		//call.NotifyPeerStateChange(call.PeerStateCallStruct{
 		//	Platform:  call.Android,
 		//	PublicKey: peer.publicKey,
@@ -133,13 +133,14 @@ func expiredRetransmitHandshake(peer *Peer, mainGoroutine func(publicKey [32]byt
 		peer.device.log.Verbosef("%s - Handshake did not complete after %d seconds, retrying (try %d)", peer, int(RekeyTimeout.Seconds()), peer.timers.handshakeAttempts.Load()+1)
 
 		// Notify all listeners that the handshake failed
-		//peerState.GetInstance().NotifyStateChange(peer.publicKey, peerState.HandshakeFailedForOther)
+		peerState.GetInstance().NotifyStateChange(peer.publicKey, peerState.HandshakeFailedForOther)
+
 		//mainGoroutine(peer.publicKey, peerState.HandshakeFailedForOther)
-		call.NotifyPeerStateChange(call.PeerStateCallStruct{
-			Platform:  call.Android,
-			PublicKey: peer.publicKey,
-			State:     peerState.HandshakeFailedForOther,
-		}) // 发送结构体数据到主协程
+		//call.NotifyPeerStateChange(call.PeerStateCallStruct{
+		//	Platform:  call.Android,
+		//	PublicKey: peer.publicKey,
+		//	State:     peerState.HandshakeFailedForOther,
+		//}) // 发送结构体数据到主协程
 
 		/* We clear the endpoint address src address, in case this is the cause of trouble. */
 		peer.Lock()

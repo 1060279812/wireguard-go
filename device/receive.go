@@ -9,7 +9,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
-	"github.com/1060279812/wireguard-go/call"
 	peerState "github.com/1060279812/wireguard-go/peer"
 	"net"
 	"sync"
@@ -371,11 +370,12 @@ func (device *Device) RoutineHandshake(id int, mainGoroutine func(publicKey [32]
 
 			// Notify all listeners Received handshake response
 			//mainGoroutine(peer.publicKey, peerState.HandshakeSuccess)
-			call.NotifyPeerStateChange(call.PeerStateCallStruct{
-				Platform:  call.Android,
-				PublicKey: peer.publicKey,
-				State:     peerState.HandshakeSuccess,
-			}) // 发送结构体数据到主协程
+			peerState.GetInstance().NotifyStateChange(peer.publicKey, peerState.HandshakeSuccess)
+			//call.NotifyPeerStateChange(call.PeerStateCallStruct{
+			//	Platform:  call.Android,
+			//	PublicKey: peer.publicKey,
+			//	State:     peerState.HandshakeSuccess,
+			//}) // 发送结构体数据到主协程
 
 			device.log.Verbosef("%v - Received handshake response", peer)
 			peer.rxBytes.Add(uint64(len(elem.packet)))

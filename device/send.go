@@ -9,7 +9,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
-	"github.com/1060279812/wireguard-go/call"
 	"net"
 	"os"
 	"sync"
@@ -130,12 +129,12 @@ func (peer *Peer) SendHandshakeInitiation(isRetry bool) error {
 	err = peer.SendBuffer(packet)
 	if err != nil {
 
-		//peerState.GetInstance().NotifyStateChange(peer.publicKey, peerState.HandshakeFailedForNetwork)
-		call.NotifyPeerStateChange(call.PeerStateCallStruct{
-			Platform:  call.Android,
-			PublicKey: peer.publicKey,
-			State:     peerState.HandshakeFailedForNetwork,
-		}) // 发送结构体数据到主协程
+		peerState.GetInstance().NotifyStateChange(peer.publicKey, peerState.HandshakeFailedForNetwork)
+		//call.NotifyPeerStateChange(call.PeerStateCallStruct{
+		//	Platform:  call.Android,
+		//	PublicKey: peer.publicKey,
+		//	State:     peerState.HandshakeFailedForNetwork,
+		//}) // 发送结构体数据到主协程
 
 		peer.device.log.Errorf("%v - Failed to send handshake initiation: %v", peer, err)
 	}
@@ -455,12 +454,12 @@ func (peer *Peer) RoutineSequentialSender(mainGoroutine func(publicKey [32]byte,
 
 			// Notify all listeners that the Failed to send data packet
 			//mainGoroutine(peer.publicKey, peerState.HandshakeFailedForNetwork)
-			//peerState.GetInstance().NotifyStateChange(peer.publicKey, peerState.HandshakeFailedForNetwork)
-			call.NotifyPeerStateChange(call.PeerStateCallStruct{
-				Platform:  call.Android,
-				PublicKey: peer.publicKey,
-				State:     peerState.HandshakeFailedForNetwork,
-			}) // 发送结构体数据到主协程
+			peerState.GetInstance().NotifyStateChange(peer.publicKey, peerState.HandshakeFailedForNetwork)
+			//call.NotifyPeerStateChange(call.PeerStateCallStruct{
+			//	Platform:  call.Android,
+			//	PublicKey: peer.publicKey,
+			//	State:     peerState.HandshakeFailedForNetwork,
+			//}) // 发送结构体数据到主协程
 
 			device.log.Errorf("%v - Failed to send data packet: %v", peer, err)
 			continue

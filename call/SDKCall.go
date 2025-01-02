@@ -11,14 +11,14 @@ const (
 )
 
 // 定义一个全局的Channel
-var PeerStateCallChan = make(chan PeerStateCallStruct)
+//var PeerStateCallChan = make(chan PeerStateCallStruct)
 
 func NotifyPeerStateChange(peerStateS PeerStateCallStruct) {
-	PeerStateCallChan <- peerStateS
+	//PeerStateCallChan <- peerStateS
 }
 
 func closePeerStateCallChan() {
-	close(PeerStateCallChan)
+	//close(PeerStateCallChan)
 }
 
 type PeerStateCallStruct struct {
