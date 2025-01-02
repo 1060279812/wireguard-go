@@ -100,10 +100,10 @@ void CallJavaOnPeerStateChange(unsigned char *publicKey, int state){
     //pthread_mutex_unlock(&jni_mutex);
 }
 */
-//import "C"
-
+import "C"
 import (
 	"sync"
+	"unsafe"
 )
 
 // PeerStateManager 单例模式管理所有监听器
@@ -166,11 +166,11 @@ func (manager *PeerStateManager) NotifyStateChange(publicKey [NoisePublicKeySize
 	//defer runtime.UnlockOSThread()
 	//}
 
-	//cPublicKey := unsafe.Pointer(&publicKey[0]) // 获取数组的第一个元素的指针，转换为 unsafe.Pointer
-	//// 将 unsafe.Pointer 转换为 C.uchar* 类型
-	//cPublicKeyC := (*C.uchar)(cPublicKey) // 强制转换为 C 中的 uchar 类型指针
-	//// 调用JNI函数
-	//C.CallJavaOnPeerStateChange(cPublicKeyC, C.int(state))
+	cPublicKey := unsafe.Pointer(&publicKey[0]) // 获取数组的第一个元素的指针，转换为 unsafe.Pointer
+	// 将 unsafe.Pointer 转换为 C.uchar* 类型
+	cPublicKeyC := (*C.uchar)(cPublicKey) // 强制转换为 C 中的 uchar 类型指针
+	// 调用JNI函数
+	C.CallJavaOnPeerStateChange(cPublicKeyC, C.int(state))
 }
 
 // DestroyAllListeners 销毁所有监听器

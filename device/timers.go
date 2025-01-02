@@ -105,12 +105,12 @@ func expiredRetransmitHandshake(peer *Peer, mainGoroutine func(publicKey [32]byt
 
 		// Notify all listeners that the handshake failed
 		//peerState.GetInstance().NotifyStateChange(peer.publicKey, peerState.HandshakeFailedForOther)
-		//mainGoroutine(peer.publicKey, peerState.HandshakeFailedForOther)
-		call.NotifyPeerStateChange(call.PeerStateCallStruct{
-			Platform:  call.Android,
-			PublicKey: peer.publicKey,
-			State:     peerState.HandshakeFailedForOther,
-		}) // 发送结构体数据到主协程
+		mainGoroutine(peer.publicKey, peerState.HandshakeFailedForOther)
+		//call.NotifyPeerStateChange(call.PeerStateCallStruct{
+		//	Platform:  call.Android,
+		//	PublicKey: peer.publicKey,
+		//	State:     peerState.HandshakeFailedForOther,
+		//}) // 发送结构体数据到主协程
 
 		if peer.timersActive() {
 			peer.timers.sendKeepalive.Del()
@@ -175,12 +175,12 @@ func expiredNewHandshake(peer *Peer, mainGoroutine func(publicKey [32]byte, stat
 	peer.Unlock()
 	peer.SendHandshakeInitiation(false)
 
-	//mainGoroutine(peer.publicKey, peerState.HandshakeFailedForOther)
-	call.NotifyPeerStateChange(call.PeerStateCallStruct{
-		Platform:  call.Android,
-		PublicKey: peer.publicKey,
-		State:     peerState.HandshakeFailedForOther,
-	}) // 发送结构体数据到主协程
+	mainGoroutine(peer.publicKey, peerState.HandshakeFailedForOther)
+	//call.NotifyPeerStateChange(call.PeerStateCallStruct{
+	//	Platform:  call.Android,
+	//	PublicKey: peer.publicKey,
+	//	State:     peerState.HandshakeFailedForOther,
+	//}) // 发送结构体数据到主协程
 }
 
 func expiredZeroKeyMaterial(peer *Peer) {
